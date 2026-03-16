@@ -39,10 +39,7 @@ async def get_dag_runs_today() -> str:
     today = datetime.now(UTC).strftime("%Y-%m-%dT00:00:00Z")
     data = await airflow_get(
         "/dags/~/dagRuns",
-        params={
-            "execution_date_gte": today,
-            "order_by": "-execution_date",
-        },
+        params={"execution_date_gte": today},
     )
     runs = data.get("dag_runs", [])
 
@@ -53,8 +50,8 @@ async def get_dag_runs_today() -> str:
     for run in runs:
         dag_id = run.get("dag_id", "unknown")
         state = run.get("state", "unknown")
-        execution_date = run.get("execution_date", "")
-        lines.append(f"  - {dag_id}: {state} (started {execution_date})")
+        logical_date = run.get("logical_date", run.get("execution_date", ""))
+        lines.append(f"  - {dag_id}: {state} (started {logical_date})")
 
     return "\n".join(lines)
 
@@ -70,7 +67,7 @@ async def get_dag_run_status(dag_id: str) -> str:
     """
     data = await airflow_get(
         f"/dags/{dag_id}/dagRuns",
-        params={"order_by": "-execution_date", "limit": 1},
+        params={"limit": 1},
     )
     runs = data.get("dag_runs", [])
 
@@ -79,9 +76,7 @@ async def get_dag_run_status(dag_id: str) -> str:
 
     run = runs[0]
     state = run.get("state", "unknown")
-    execution_date = run.get("execution_date", "")
+    logical_date = run.get("logical_date", run.get("execution_date", ""))
     run_id = run.get("dag_run_id", "")
 
-    return (
-        f"DAG: {dag_id}\n  Run ID: {run_id}\n  State: {state}\n  Execution date: {execution_date}"
-    )
+    return f"DAG: {dag_id}\n  Run ID: {run_id}\n  State: {state}\n  Date: {logical_date}"

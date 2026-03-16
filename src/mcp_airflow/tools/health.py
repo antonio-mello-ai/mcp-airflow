@@ -21,7 +21,6 @@ async def check_failed_dags() -> str:
         params={
             "state": "failed",
             "execution_date_gte": since,
-            "order_by": "-execution_date",
         },
     )
     runs = data.get("dag_runs", [])
@@ -32,8 +31,8 @@ async def check_failed_dags() -> str:
     lines: list[str] = [f"Failed DAG runs in last 24h ({len(runs)}):\n"]
     for run in runs:
         dag_id = run.get("dag_id", "unknown")
-        execution_date = run.get("execution_date", "")
-        lines.append(f"  - {dag_id} (failed at {execution_date})")
+        logical_date = run.get("logical_date", run.get("execution_date", ""))
+        lines.append(f"  - {dag_id} (failed at {logical_date})")
 
     return "\n".join(lines)
 
@@ -44,7 +43,21 @@ async def check_scheduler_health() -> str:
 
     Returns the scheduler status and latest heartbeat timestamp.
     """
-    data = await airflow_get("/health")
+    # /health is at the root, not under /api/v2
+    import httpx
+
+    from mcp_airflow.client import get_config
+
+    config = get_config()
+    from urllib.parse import urlparse
+
+    parsed = urlparse(config.base_url)
+    root_url = f"{parsed.scheme}://{parsed.netloc}"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(f"{root_url}/health")
+        response.raise_for_status()
+        data = response.json()
 
     scheduler = data.get("scheduler", {})
     status = scheduler.get("status", "unknown")
