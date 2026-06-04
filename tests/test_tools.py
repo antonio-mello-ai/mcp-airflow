@@ -79,7 +79,7 @@ async def test_get_dag_runs_today():
             {
                 "dag_id": "etl_daily",
                 "state": "success",
-                "execution_date": "2026-03-16T06:00:00Z",
+                "logical_date": "2026-03-16T06:00:00Z",
             },
         ]
     }
@@ -89,6 +89,10 @@ async def test_get_dag_runs_today():
 
     assert "etl_daily" in result
     assert "success" in result
+    # Airflow 3.x filters by run_after_gte; execution_date_gte was removed
+    _, kwargs = mock_get.call_args
+    assert "run_after_gte" in kwargs["params"]
+    assert "execution_date_gte" not in kwargs["params"]
 
 
 @pytest.mark.asyncio
@@ -110,7 +114,7 @@ async def test_get_dag_run_status():
             {
                 "dag_run_id": "manual__2026-03-16",
                 "state": "running",
-                "execution_date": "2026-03-16T10:00:00Z",
+                "logical_date": "2026-03-16T10:00:00Z",
             },
         ]
     }
@@ -140,7 +144,7 @@ async def test_trigger_dag_run():
     mock_response = {
         "dag_run_id": "manual__2026-03-16T12:00:00",
         "state": "queued",
-        "execution_date": "2026-03-16T12:00:00Z",
+        "logical_date": "2026-03-16T12:00:00Z",
     }
     with patch("mcp_airflow.tools.runs.airflow_post", new_callable=AsyncMock) as mock_post:
         mock_post.return_value = mock_response
@@ -148,6 +152,7 @@ async def test_trigger_dag_run():
 
     assert "triggered successfully" in result
     assert "queued" in result
+    assert "Logical date" in result
     mock_post.assert_called_once_with("/dags/etl_daily/dagRuns", json_body={})
 
 
@@ -201,7 +206,7 @@ async def test_check_failed_dags():
         "dag_runs": [
             {
                 "dag_id": "etl_broken",
-                "execution_date": "2026-03-16T03:00:00Z",
+                "logical_date": "2026-03-16T03:00:00Z",
             },
         ]
     }
@@ -211,6 +216,11 @@ async def test_check_failed_dags():
 
     assert "etl_broken" in result
     assert "failed" in result.lower()
+    # Airflow 3.x: filter by run_after_gte + state=failed (execution_date_gte removed)
+    _, kwargs = mock_get.call_args
+    assert kwargs["params"]["state"] == "failed"
+    assert "run_after_gte" in kwargs["params"]
+    assert "execution_date_gte" not in kwargs["params"]
 
 
 @pytest.mark.asyncio

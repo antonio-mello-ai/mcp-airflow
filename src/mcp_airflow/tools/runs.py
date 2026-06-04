@@ -19,13 +19,15 @@ async def trigger_dag_run(dag_id: str) -> str:
 
     run_id = data.get("dag_run_id", "unknown")
     state = data.get("state", "unknown")
-    execution_date = data.get("execution_date", "")
+    # Airflow 3.x dropped execution_date in favour of logical_date; a "trigger now"
+    # run may have a null logical_date, so fall back to run_after.
+    logical_date = data.get("logical_date") or data.get("run_after", "")
 
     return (
         f"DAG '{dag_id}' triggered successfully.\n"
         f"  Run ID: {run_id}\n"
         f"  State: {state}\n"
-        f"  Execution date: {execution_date}"
+        f"  Logical date: {logical_date}"
     )
 
 

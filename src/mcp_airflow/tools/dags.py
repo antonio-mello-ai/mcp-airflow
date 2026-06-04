@@ -39,7 +39,7 @@ async def get_dag_runs_today() -> str:
     today = datetime.now(UTC).strftime("%Y-%m-%dT00:00:00Z")
     data = await airflow_get(
         "/dags/~/dagRuns",
-        params={"execution_date_gte": today},
+        params={"run_after_gte": today},
     )
     runs = data.get("dag_runs", [])
 

@@ -20,7 +20,7 @@ async def check_failed_dags() -> str:
         "/dags/~/dagRuns",
         params={
             "state": "failed",
-            "execution_date_gte": since,
+            "run_after_gte": since,
         },
     )
     runs = data.get("dag_runs", [])
