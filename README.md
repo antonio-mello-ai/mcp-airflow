@@ -5,7 +5,11 @@ MCP server that exposes Apache Airflow REST API operations as tools. Built with 
 ## Install
 
 ```bash
-uv pip install -e "."
+# Run directly with uvx (no install needed)
+uvx mcp-airflow
+
+# Or install with pip
+pip install mcp-airflow
 ```
 
 For development:
