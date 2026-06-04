@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -21,8 +21,17 @@ with patch.dict(
 
 
 @pytest.fixture(autouse=True)
-def _reset_client():
-    """Reset the global client between tests."""
+def _reset_client(monkeypatch):
+    """Set required config env vars and reset the global client between tests.
+
+    The module-level patch.dict only covers import time; tools that rebuild the
+    config at call time (e.g. check_scheduler_health reading base_url) need the
+    env vars present during the test run too.
+    """
+    monkeypatch.setenv("AIRFLOW_BASE_URL", "http://localhost:8080/api/v1")
+    monkeypatch.setenv("AIRFLOW_USERNAME", "admin")
+    monkeypatch.setenv("AIRFLOW_PASSWORD", "admin")
+
     import mcp_airflow.client as client_mod
 
     client_mod._client = None
@@ -218,18 +227,31 @@ async def test_check_failed_dags_none():
 
 @pytest.mark.asyncio
 async def test_check_scheduler_health():
-    mock_response = {
+    # check_scheduler_health hits /health at the host root via its own httpx
+    # client (the endpoint lives outside /api), so mock the HTTP call directly.
+    health_payload = {
         "scheduler": {
             "status": "healthy",
             "latest_scheduler_heartbeat": "2026-03-16T12:00:00Z",
         },
         "metadatabase": {"status": "healthy"},
     }
-    with patch("mcp_airflow.tools.health.airflow_get", new_callable=AsyncMock) as mock_get:
-        mock_get.return_value = mock_response
+
+    mock_response = MagicMock()
+    mock_response.json.return_value = health_payload
+    mock_response.raise_for_status.return_value = None
+
+    mock_client = AsyncMock()
+    mock_client.get.return_value = mock_response
+
+    mock_ctx = MagicMock()
+    mock_ctx.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_ctx.__aexit__ = AsyncMock(return_value=False)
+
+    with patch("httpx.AsyncClient", return_value=mock_ctx):
         result = await check_scheduler_health()
 
     assert "healthy" in result
     assert "Scheduler" in result
     assert "Metadatabase" in result
-    mock_get.assert_called_once_with("/health")
+    mock_client.get.assert_called_once_with("http://localhost:8080/health")
