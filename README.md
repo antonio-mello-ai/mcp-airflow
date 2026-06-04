@@ -68,3 +68,7 @@ Or add to your MCP client config (e.g., Claude Desktop):
 ```bash
 pytest
 ```
+
+## License
+
+MIT
