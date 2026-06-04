@@ -26,9 +26,20 @@ Set these environment variables (or create a `.env` file from `.env.example`):
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `AIRFLOW_BASE_URL` | Airflow REST API base URL | `http://100.x.x.x:8080/api/v1` |
-| `AIRFLOW_USERNAME` | Basic auth username | `admin` |
-| `AIRFLOW_PASSWORD` | Basic auth password | |
+| `AIRFLOW_BASE_URL` | Airflow REST API base URL. Use `/api/v2` for Airflow 3.x or `/api/v1` for 2.x | `http://100.x.x.x:8080/api/v2` |
+| `AIRFLOW_USERNAME` | Auth username (JWT on 3.x, basic auth on 2.x) | `admin` |
+| `AIRFLOW_PASSWORD` | Auth password | |
+
+### Authentication
+
+The client picks the auth scheme automatically based on your Airflow version:
+
+- **Airflow 3.x (JWT)** — a JWT token is obtained from the `/auth/token` endpoint
+  using `AIRFLOW_USERNAME`/`AIRFLOW_PASSWORD`, sent as a `Bearer` token, and
+  refreshed automatically. Point `AIRFLOW_BASE_URL` at `/api/v2`.
+- **Airflow 2.x (basic auth)** — if the JWT flow is unavailable, the client falls
+  back to HTTP basic auth with the same username/password. Point `AIRFLOW_BASE_URL`
+  at `/api/v1`.
 
 ## Usage
 
@@ -46,7 +57,7 @@ Or add to your MCP client config (e.g., Claude Desktop):
     "airflow": {
       "command": "mcp-airflow",
       "env": {
-        "AIRFLOW_BASE_URL": "http://100.x.x.x:8080/api/v1",
+        "AIRFLOW_BASE_URL": "http://100.x.x.x:8080/api/v2",
         "AIRFLOW_USERNAME": "admin",
         "AIRFLOW_PASSWORD": "your-password"
       }
