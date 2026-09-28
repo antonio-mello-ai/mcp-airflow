@@ -1,6 +1,34 @@
+---
+title: MCP Airflow
+kind: source_doc
+area: engineering
+project: mcp-airflow
+collection: mcp-airflow
+owner: maintainers
+status: current
+canonical: README.md
+globalRef: qmd://mcp-airflow/README.md
+reviewCadenceDays: 90
+lastReviewedAt: 2026-09-28
+sourceRefs:
+  - pyproject.toml
+related:
+  - AGENTS.md
+  - docs/fluxos-negocio.md
+  - docs/arquitetura.md
+  - docs/operacao.md
+  - docs/index.md
+supersedes: []
+supersededBy: []
+sensitivity: public
+---
 # mcp-airflow
 
-MCP server that exposes Apache Airflow REST API operations as tools. Built with [FastMCP](https://github.com/jlowin/fastmcp).
+MCP server that exposes Apache Airflow REST API operations as tools. Built with
+the FastMCP API from the [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk).
+
+This is an open-source package. The maintainers do not operate a public hosted
+Airflow endpoint through this repository.
 
 ## Install
 
@@ -83,6 +111,13 @@ Or add to your MCP client config (e.g., Claude Desktop):
 ```bash
 pytest
 ```
+
+## Documentation
+
+Start at [`docs/index.md`](docs/index.md) for the supported flows, architecture,
+operational guidance, and security boundary.
+
+Roadmap and delivery status live in GitHub Issues and pull requests.
 
 ## License
 
